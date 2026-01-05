@@ -1,0 +1,50 @@
+# BMS 监测系统配置文件
+
+# 串口配置
+serial:
+  port: "/dev/ttyCH341USB0"  # 串口设备路径，可根据实际情况修改
+  baudrate: 9600
+  bytesize: 8
+  parity: "N"
+  stopbits: 1
+  timeout: 0.5
+
+# Modbus 配置
+modbus:
+  address: 0x0B  # 设备地址
+
+# 日志配置
+logging:
+  log_dir: "logs"
+  log_file: "bms_monitor.log"
+  scan_log_file: "bms_scan.log"
+  max_log_size: 204800  # 200KB，单位：字节
+  log_rotation: true
+
+# 监测配置
+monitor:
+  scan_interval: 5  # 扫描间隔（秒）
+  
+# 安全阈值配置
+thresholds:
+  pack_voltage:
+    max: 58.4  # V
+    min: 40.0  # V
+  temperature:
+    max: 60.0  # ℃
+    min: 0.0   # ℃
+  soc:
+    low: 5     # %
+    high: 100  # %
+
+# 寄存器地址映射（参考通信协议）
+registers:
+  pack_info_start: 0x0400
+  pack_info_count: 0x16
+  cell_voltage_start: 0x0800
+  cell_voltage_count: 16
+  temperature_start: 0x0C00
+  temperature_count: 4
+  status_start: 0x1000
+  status_count: 3
+
