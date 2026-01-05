@@ -67,7 +67,9 @@ NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
 info "新版本: ${NEW_VERSION}"
 
 # 检查是否有未提交的更改
+HAS_CHANGES=false
 if ! git diff --quiet || ! git diff --cached --quiet; then
+    HAS_CHANGES=true
     # 添加所有文件
     git add .
     
@@ -82,14 +84,49 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
     git commit -m "${COMMIT_MSG}"
 else
     info "没有待提交的更改"
+    
+    # 检查是否有未推送的提交
+    if git rev-list HEAD ^origin/main 2>/dev/null | grep -q .; then
+        HAS_CHANGES=true
+        info "检测到未推送的提交，将推送这些提交"
+    else
+        # 没有代码变更，也没有未推送的提交
+        warning "没有代码变更，也没有未推送的提交"
+        echo ""
+        read -p "是否仍要创建新版本标签 ${NEW_VERSION}? (y/N): " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            info "已取消，未创建新版本"
+            exit 0
+        fi
+        info "将创建新版本标签（无代码变更）"
+    fi
 fi
 
 # 设置主分支
 git branch -M main 2>/dev/null || true
 
-# 推送到远程
-info "推送到远程仓库..."
-git push -u origin main
+# 推送到远程（如果有变更或未推送的提交）
+if [ "$HAS_CHANGES" = true ]; then
+    info "推送到远程仓库..."
+    git push -u origin main
+fi
+
+# 检查版本标签是否已存在
+if git rev-parse "${NEW_VERSION}" >/dev/null 2>&1; then
+    warning "版本标签 ${NEW_VERSION} 已存在"
+    read -p "是否覆盖现有标签? (y/N): " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        info "删除本地标签..."
+        git tag -d "${NEW_VERSION}" 2>/dev/null || true
+        info "删除远程标签..."
+        git push origin ":refs/tags/${NEW_VERSION}" 2>/dev/null || true
+    else
+        error "版本标签已存在，操作已取消"
+        exit 1
+    fi
+fi
 
 # 创建并推送版本标签
 info "创建版本标签: ${NEW_VERSION}"
