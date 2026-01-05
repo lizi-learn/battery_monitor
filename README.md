@@ -29,7 +29,10 @@ battery_test/
 ├── scripts/              # 脚本目录
 │   ├── deploy.sh         # 部署脚本
 │   ├── scan_bms.sh       # BMS 扫描脚本
-│   └── git-push.sh       # Git 推送脚本
+│   ├── git-push.sh       # Git 推送脚本（开发机）
+│   ├── git-pull.sh       # Git 拉取脚本（部署机）
+│   ├── git-rollback.sh   # 版本回退脚本
+│   └── git-version.sh    # 版本查看脚本
 ├── logs/                 # 日志目录
 │   ├── bms_monitor.log   # 监测日志
 │   └── bms_scan.log      # 扫描日志
@@ -118,6 +121,51 @@ tail -f logs/bms_monitor.log
 ```bash
 sudo bash scripts/deploy.sh --uninstall
 ```
+
+### 多端代码同步
+
+项目提供了完整的 Git 同步脚本，支持版本管理和快速部署：
+
+#### 开发机（推送代码）
+
+```bash
+# 推送代码并自动创建版本标签（默认递增 patch 版本）
+bash scripts/git-push.sh
+
+# 递增 minor 版本
+bash scripts/git-push.sh minor
+
+# 递增 major 版本
+bash scripts/git-push.sh major
+
+# 指定提交信息
+bash scripts/git-push.sh patch "修复了某个bug"
+```
+
+#### 部署机（拉取代码）
+
+```bash
+# 查看当前版本
+bash scripts/git-version.sh
+
+# 拉取最新版本（会显示版本变更信息）
+bash scripts/git-pull.sh
+
+# 拉取指定版本
+bash scripts/git-pull.sh v1.0.2
+
+# 如果新版本有问题，快速回退到上一个版本
+bash scripts/git-rollback.sh
+```
+
+**版本管理特性：**
+- ✅ 自动版本号递增（major/minor/patch）
+- ✅ 拉取前显示当前版本
+- ✅ 拉取后显示新版本和变更日志
+- ✅ 支持快速回退到上一个版本
+- ✅ 版本信息自动保存和同步
+
+详细使用说明请参考：[Git 多端同步使用指南](docs/GIT_SYNC_GUIDE.md)
 
 ## 配置说明
 
