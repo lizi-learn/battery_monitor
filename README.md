@@ -32,7 +32,12 @@ battery_test/
 │   ├── git-push.sh       # Git 推送脚本（开发机）
 │   ├── git-pull.sh       # Git 拉取脚本（部署机）
 │   ├── git-rollback.sh   # 版本回退脚本
-│   └── git-version.sh    # 版本查看脚本
+│   ├── git-version.sh    # 版本查看脚本
+│   ├── docker-build.sh   # Docker 构建脚本
+│   └── docker-run.sh     # Docker 运行脚本
+├── Dockerfile            # Docker 镜像构建文件
+├── docker-compose.yml    # Docker Compose 配置文件
+└── .dockerignore         # Docker 忽略文件
 ├── logs/                 # 日志目录
 │   ├── bms_monitor.log   # 监测日志
 │   └── bms_scan.log      # 扫描日志
@@ -95,6 +100,29 @@ python -m src.bms_scanner
 ```bash
 python -m src.bms_scanner config/config.yaml
 ```
+
+### Docker 部署（推荐）
+
+使用 Docker 部署，支持串口设备访问：
+
+```bash
+# 使用 docker-compose（推荐）
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+
+# 停止服务
+docker-compose down
+
+# 或使用脚本
+bash scripts/docker-build.sh
+bash scripts/docker-run.sh /dev/ttyCH341USB0
+```
+
+**注意：** 需要根据实际情况修改 `docker-compose.yml` 中的串口设备路径。
+
+详细说明请参考：[Docker 部署指南](docs/DOCKER_DEPLOY.md)
 
 ### 系统服务部署
 

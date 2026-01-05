@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  bms-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bms-monitor
+    restart: unless-stopped
+    
+    # 映射串口设备（根据实际情况修改设备路径）
+    # 方式1: 映射单个设备（推荐）
+    devices:
+      - /dev/ttyCH341USB0:/dev/ttyCH341USB0
+    
+    # 方式2: 如果需要映射所有 USB 串口设备，可以使用以下配置
+    # devices:
+    #   - /dev/ttyUSB0:/dev/ttyUSB0
+    #   - /dev/ttyUSB1:/dev/ttyUSB1
+    #   - /dev/ttyCH341USB0:/dev/ttyCH341USB0
+    #   - /dev/ttyCH341USB1:/dev/ttyCH341USB1
+    
+    # 方式3: 如果需要访问所有串口设备，可以使用 privileged 模式（不推荐，安全性较低）
+    # privileged: true
+    
+    # 挂载配置文件和日志目录
+    volumes:
+      - ./config:/app/config:ro  # 配置文件只读挂载
+      - ./logs:/app/logs         # 日志目录读写挂载
+    
+    # 环境变量（可选，用于覆盖配置）
+    environment:
+      - TZ=Asia/Shanghai
+      # - SERIAL_PORT=/dev/ttyCH341USB0  # 如果需要通过环境变量指定串口
+    
+    # 网络模式（如果需要访问宿主机网络）
+    network_mode: host
+    
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # BMS 扫描服务（可选，用于一次性扫描）
+  bms-scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bms-scanner
+    profiles:
+      - scanner  # 使用 profile 控制，默认不启动
+    
+    devices:
+      - /dev/ttyCH341USB0:/dev/ttyCH341USB0
+    
+    volumes:
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+    
+    environment:
+      - TZ=Asia/Shanghai
+    
+    command: ["python", "-m", "src.bms_scanner", "/app/config/config.yaml"]
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+

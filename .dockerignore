@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+.git_previous_version
+.git_current_version
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.venv
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 日志和临时文件
+logs/
+*.log
+*.txt
+!requirements.txt
+
+# 文档
+docs/
+*.md
+!README.md
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# 旧文件
+all.py
+battery.py
+参考.py
+all.txt
+battrey.txt
+
+# 测试
+tests/
+.pytest_cache/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
