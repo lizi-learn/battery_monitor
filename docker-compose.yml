@@ -8,20 +8,10 @@ services:
     container_name: bms-monitor
     restart: unless-stopped
     
-    # 映射串口设备（根据实际情况修改设备路径）
-    # 方式1: 映射单个设备（推荐）
-    devices:
-      - /dev/ttyCH341USB0:/dev/ttyCH341USB0
-    
-    # 方式2: 如果需要映射所有 USB 串口设备，可以使用以下配置
-    # devices:
-    #   - /dev/ttyUSB0:/dev/ttyUSB0
-    #   - /dev/ttyUSB1:/dev/ttyUSB1
-    #   - /dev/ttyCH341USB0:/dev/ttyCH341USB0
-    #   - /dev/ttyCH341USB1:/dev/ttyCH341USB1
-    
-    # 方式3: 如果需要访问所有串口设备，可以使用 privileged 模式（不推荐，安全性较低）
-    # privileged: true
+    # 映射串口设备 - 使用privileged模式以访问所有CH341设备
+    # 这样即使设备不存在，容器也能正常启动
+    # 如果设备存在，程序会自动找到并使用
+    privileged: true
     
     # 挂载配置文件和日志目录
     volumes:
@@ -52,8 +42,8 @@ services:
     profiles:
       - scanner  # 使用 profile 控制，默认不启动
     
-    devices:
-      - /dev/ttyCH341USB0:/dev/ttyCH341USB0
+    # 使用privileged模式以访问所有CH341设备
+    privileged: true
     
     volumes:
       - ./config:/app/config:ro
