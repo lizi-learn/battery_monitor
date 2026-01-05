@@ -9,7 +9,10 @@ battery_test/
 ├── PROJECT_STRUCTURE.md     # 项目结构说明（本文件）
 ├── requirements.txt         # Python 依赖包
 ├── setup.py                 # 安装脚本
+├── Dockerfile               # Docker 镜像构建文件
+├── docker-compose.yml       # Docker Compose 配置
 ├── .gitignore              # Git 忽略文件
+├── .gitattributes          # Git 属性配置
 │
 ├── config/                 # 配置文件目录
 │   └── config.yaml         # 主配置文件（串口、Modbus、日志、阈值等）
@@ -24,16 +27,33 @@ battery_test/
 ├── scripts/                # 脚本目录
 │   ├── deploy.sh          # 系统服务部署脚本
 │   ├── scan_bms.sh        # BMS 端口扫描脚本
-│   └── git-push.sh        # Git 推送脚本
+│   ├── git-push.sh        # Git 推送脚本（开发机）
+│   ├── git-pull.sh         # Git 拉取脚本（部署机）
+│   ├── git-rollback.sh    # 版本回退脚本
+│   ├── git-version.sh     # 版本查看脚本
+│   ├── docker-build.sh    # Docker 构建脚本
+│   ├── docker-run.sh      # Docker 运行脚本
+│   └── docker-quickstart.sh # Docker 快速启动脚本
 │
-├── logs/                   # 日志目录（自动创建）
+├── docs/                   # 文档目录
+│   ├── README.md          # 文档索引
+│   ├── DOCKER_DEPLOY.md   # Docker 部署指南
+│   ├── GIT_SYNC_GUIDE.md  # Git 同步使用指南
+│   ├── QUICK_REFERENCE.md # 快速参考
+│   ├── 通信协议.txt       # Modbus 通信协议文档
+│   └── pdfs/              # PDF 文档目录
+│       └── BMS MODBUS 协议.pdf
+│
+├── logs/                   # 日志目录（自动创建，git忽略）
 │   ├── bms_monitor.log    # 监测日志
 │   └── bms_scan.log       # 扫描日志
 │
-├── docs/                   # 文档目录
-│   └── 通信协议.txt       # Modbus 通信协议文档
+├── tests/                  # 测试目录（预留）
 │
-└── tests/                  # 测试目录（预留）
+└── archive/                # 归档目录（历史文件）
+    ├── README.md          # 归档说明
+    ├── old_code/          # 旧代码文件
+    └── old_output/        # 旧输出文件
 ```
 
 ## 核心模块说明

@@ -43,12 +43,8 @@ logs/
 # .git_current_version
 # .git_previous_version
 
-# 旧文件（迁移后删除）
-all.py
-battery.py
-参考.py
-all.txt
-battrey.txt
+# 归档目录（可选，如需保留历史文件可提交）
+# archive/
 
 # 配置文件（可选，如果包含敏感信息）
 # config/config.yaml
