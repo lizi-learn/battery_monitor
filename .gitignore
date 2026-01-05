@@ -39,6 +39,10 @@ logs/
 *.txt
 !requirements.txt
 
+# 版本管理文件（可选，建议提交以便追踪）
+# .git_current_version
+# .git_previous_version
+
 # 旧文件（迁移后删除）
 all.py
 battery.py
