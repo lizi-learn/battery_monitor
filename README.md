@@ -212,8 +212,12 @@ bash scripts/git-rollback.sh
 - ✅ 拉取后显示新版本和变更日志
 - ✅ 支持快速回退到上一个版本
 - ✅ 版本信息自动保存和同步
+- ✅ 自动更新机制（结合watchtower）
+- ✅ 版本标志检测（开发机配置控制）
 
-详细使用说明请参考：[Git 多端同步使用指南](docs/GIT_SYNC_GUIDE.md)
+详细使用说明请参考：
+- [Git 多端同步使用指南](docs/GIT_SYNC_GUIDE.md)
+- [版本管理和自动更新指南](docs/VERSION_MANAGEMENT.md)
 
 ## 配置说明
 

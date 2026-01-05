@@ -48,3 +48,18 @@ registers:
   status_start: 0x1000
   status_count: 3
 
+# 版本管理和自动更新配置
+version:
+  # 是否启用自动更新（开发机配置，部署机读取此配置决定是否自动更新）
+  auto_update_enabled: false  # true: 启用自动更新, false: 禁用自动更新
+  # 版本检查间隔（秒），部署机轮询间隔
+  check_interval: 300  # 默认5分钟检查一次
+  # 版本信息文件路径（相对于项目根目录）
+  version_file: "VERSION.json"
+  # 特殊标志配置（开发机设置，用于标识特定功能或代码）
+  flags:
+    # 示例标志，可根据需要添加
+    # critical_update: false  # 关键更新标志
+    # feature_enabled: true   # 功能启用标志
+    # experimental: false     # 实验性功能标志
+

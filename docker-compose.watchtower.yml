@@ -1,0 +1,27 @@
+# Watchtower 自动更新配置示例
+# 使用方式: docker-compose -f docker-compose.yml -f docker-compose.watchtower.yml up -d
+
+version: '3.8'
+
+services:
+  # Watchtower 服务 - 自动更新容器
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_POLL_INTERVAL=300  # 5分钟检查一次（默认24小时）
+      - WATCHTOWER_CLEANUP=true       # 清理旧镜像
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - WATCHTOWER_REVIVE_STOPPED=false
+      - WATCHTOWER_LABEL_ENABLE=true  # 只更新带有特定标签的容器
+    # 只监控带有 com.centurylinklabs.watchtower.enable=true 标签的容器
+    command: --label-enable --interval 300
+
+  # 为 bms-monitor 添加 watchtower 标签
+  bms-monitor:
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+

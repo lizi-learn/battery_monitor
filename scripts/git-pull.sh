@@ -124,6 +124,25 @@ git checkout "${TARGET_VERSION}" 2>/dev/null || {
 # 保存新版本到文件
 echo "$TARGET_VERSION" > .git_current_version
 
+# 如果存在版本信息文件，显示版本标志信息
+if [ -f "VERSION.json" ]; then
+    info "版本信息:"
+    python3 -c "
+import json
+try:
+    with open('VERSION.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+        flags = data.get('flags', {})
+        if flags:
+            print('  标志:', json.dumps(flags, ensure_ascii=False, indent=2))
+        build_hash = data.get('build_hash', '')
+        if build_hash:
+            print('  构建哈希:', build_hash)
+except:
+    pass
+" 2>/dev/null || true
+fi
+
 success "拉取完成！"
 echo ""
 version "版本信息:"

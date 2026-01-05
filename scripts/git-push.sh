@@ -66,11 +66,17 @@ esac
 NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
 info "新版本: ${NEW_VERSION}"
 
+# 生成版本信息文件（在提交代码之前）
+info "生成版本信息文件..."
+python3 scripts/generate_version.py "${NEW_VERSION}" VERSION.json config/config.yaml || {
+    warning "版本信息文件生成失败，继续执行..."
+}
+
 # 检查是否有未提交的更改
 HAS_CHANGES=false
 if ! git diff --quiet || ! git diff --cached --quiet; then
     HAS_CHANGES=true
-    # 添加所有文件
+    # 添加所有文件（包括VERSION.json）
     git add .
     
     # 获取提交信息
@@ -91,15 +97,23 @@ else
         info "检测到未推送的提交，将推送这些提交"
     else
         # 没有代码变更，也没有未推送的提交
-        warning "没有代码变更，也没有未推送的提交"
-        echo ""
-        read -p "是否仍要创建新版本标签 ${NEW_VERSION}? (y/N): " -n 1 -r
-        echo ""
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            info "已取消，未创建新版本"
-            exit 0
+        # 但如果生成了新的版本信息文件，需要提交它
+        if [ -f "VERSION.json" ] && ! git diff --quiet -- VERSION.json 2>/dev/null; then
+            info "提交版本信息文件..."
+            git add VERSION.json
+            git commit -m "chore: 更新版本信息文件 (${NEW_VERSION})"
+            HAS_CHANGES=true
+        else
+            warning "没有代码变更，也没有未推送的提交"
+            echo ""
+            read -p "是否仍要创建新版本标签 ${NEW_VERSION}? (y/N): " -n 1 -r
+            echo ""
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                info "已取消，未创建新版本"
+                exit 0
+            fi
+            info "将创建新版本标签（无代码变更）"
         fi
-        info "将创建新版本标签（无代码变更）"
     fi
 fi
 
