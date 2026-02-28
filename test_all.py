@@ -127,6 +127,16 @@ def read_bms_temps_c(ser):
     return [(v - 2731) / 10 for v in r]
 
 
+def read_bms_soc_and_current(ser):
+    """读取 PACK 前 2 个寄存器（电流 L/H）和 SOC，返回 (soc_percent, current_mA)。失败返回 (None, None)"""
+    r = modbus_read_regs(ser, PACK_START, 0x12)
+    if not r or len(r) < 18:
+        return (None, None)
+    current_mA = s32(r[0], r[1])
+    soc = r[17]
+    return (soc, current_mA)
+
+
 def _fmt_bms_id_ascii(b):
     return "".join(c if 32 <= ord(c) < 127 else "" for c in b.decode("latin-1")).strip() or "—"
 
@@ -300,13 +310,30 @@ def run_monitor():
     try:
         while True:
             parts = []
-            # 电池温度
+            # 电池：百分比 + 是否充电 + 温度（范围，直观）
             if ser is not None:
+                soc, current_mA = read_bms_soc_and_current(ser)
                 bms = read_bms_temps_c(ser)
-                if bms is not None:
-                    parts.append(f"电池 MAX {bms[0]:.1f} MIN {bms[1]:.1f} T1 {bms[2]:.1f} T2 {bms[3]:.1f} ℃")
+                soc_s = f"{soc}%" if soc is not None else "—"
+                if current_mA is not None:
+                    if current_mA > 0:
+                        charge_s = "充电中"
+                    elif current_mA < 0:
+                        charge_s = "放电中"
+                    else:
+                        charge_s = "静置"
                 else:
-                    parts.append("电池 —")
+                    charge_s = ""
+                if bms is not None:
+                    t_min, t_max = min(bms), max(bms)
+                    if t_min == t_max:
+                        temp_s = f"{t_min:.0f}℃"
+                    else:
+                        temp_s = f"{t_min:.0f}~{t_max:.0f}℃"
+                else:
+                    temp_s = "—"
+                battery_part = f"电池 {soc_s} {charge_s} {temp_s}".strip()
+                parts.append(battery_part)
             else:
                 parts.append("电池 —")
             # 电脑温度
@@ -315,8 +342,8 @@ def run_monitor():
                 nvme = get_nvme_temp()
                 cpu_s = f"{cpu:.1f}" if cpu is not None else "—"
                 nvme_s = f"{nvme:.1f}" if nvme is not None else "—"
-                parts.append(f"CPU {cpu_s} ℃")
-                parts.append(f"NVMe {nvme_s} ℃")
+                parts.append(f"CPU {cpu_s}℃")
+                parts.append(f"NVMe {nvme_s}℃")
                 if log_msg:
                     if cpu is not None and cpu > CPU_WARN:
                         log_msg(f"WARNING: CPU 过热 {cpu:.1f}°C")
