@@ -99,6 +99,18 @@ def write(f, text: str = ""):
     print(text)
 
 
+def _fmt_time(v):
+    return "N/A" if v == 65535 else f"{v} min"
+
+
+def _fmt_bms_id_ascii(b):
+    return "".join(c if 32 <= ord(c) < 127 else "" for c in b.decode("latin-1")).strip() or "—"
+
+
+def _fmt_hex_group(b):
+    return " ".join(f"{x:02X}" for x in b)
+
+
 def main():
     ser = serial.Serial(
         port=PORT,
@@ -116,16 +128,13 @@ def main():
         write(f, "[BMS ID]")
         bms_id = modbus_read_bms_id(ser)
         if bms_id:
-            try:
-                write(f, f"ASCII : {bms_id.decode('ascii', errors='replace').strip()}")
-            except Exception:
-                pass
-            write(f, f"HEX   : {bms_id.hex().upper()}")
+            write(f, f"  ASCII : {_fmt_bms_id_ascii(bms_id)}")
+            write(f, f"  HEX   : {_fmt_hex_group(bms_id)}")
         else:
-            write(f, "未读取到（部分设备不支持 0x11）")
+            write(f, "  未读取到（部分设备不支持 0x11）")
 
         # ---------- PACK 信息 0x0400-0x0415 ----------
-        write(f, "\n[PACK 信息] 寄存器 0x0400-0x0415")
+        write(f, "\n[PACK 信息]")
         regs = modbus_read_regs(ser, PACK_START, PACK_COUNT)
         if regs:
             current = s32(regs[0], regs[1])
@@ -144,59 +153,60 @@ def main():
             battery_alarm = regs[20]
             battery_safety = regs[21]
 
-            write(f, f"Current_L/H       : {current} mA ({current / 1000:.2f} A)")
-            write(f, f"RemainingCapacity : {rem_cap} mAh")
-            write(f, f"FullChargeCapacity: {full_cap} mAh")
-            write(f, f"Charge Current    : {charge_current} mA ({charge_current / 1000:.2f} A)")
-            write(f, f"ChargingVoltage   : {charge_voltage} mV ({charge_voltage / 1000:.2f} V)")
-            write(f, f"PACK Voltage      : {pack_voltage} mV ({pack_voltage / 1000:.2f} V)")
-            write(f, f"BatteryVoltage    : {batt_voltage} mV ({batt_voltage / 1000:.2f} V)")
-            write(f, f"Cycle_Count       : {cycle}")
-            write(f, f"AverageTimeToEmpty: {t_empty} min")
-            write(f, f"AverageTimeToFull : {t_full} min")
-            write(f, f"SOC               : {soc} %")
-            write(f, f"SOH               : {soh} %")
-            write(f, f"BatteryStatus     : 0x{battery_status:04X}")
-            write(f, f"BatteryAlarm      : 0x{battery_alarm:04X}")
-            write(f, f"BatterySafety     : 0x{battery_safety:04X}")
+            L = 20
+            write(f, f"  {'电池电流':<{L}} {current / 1000:>6.2f} A")
+            write(f, f"  {'剩余容量':<{L}} {rem_cap:>6} mAh")
+            write(f, f"  {'满充容量':<{L}} {full_cap:>6} mAh")
+            write(f, f"  {'充电电流':<{L}} {charge_current / 1000:>6.2f} A")
+            write(f, f"  {'充电电压':<{L}} {charge_voltage / 1000:>6.2f} V")
+            write(f, f"  {'PACK 总电压':<{L}} {pack_voltage / 1000:>6.2f} V")
+            write(f, f"  {'电池电压':<{L}} {batt_voltage / 1000:>6.2f} V")
+            write(f, f"  {'循环次数':<{L}} {cycle:>6}")
+            write(f, f"  {'剩余可用时间':<{L}} {_fmt_time(t_empty):>6}")
+            write(f, f"  {'充满所需时间':<{L}} {_fmt_time(t_full):>6}")
+            write(f, f"  {'SOC':<{L}} {soc:>6} %")
+            write(f, f"  {'SOH':<{L}} {soh:>6} %")
+            write(f, f"  {'BatteryStatus':<{L}} 0x{battery_status:04X}")
+            write(f, f"  {'BatteryAlarm':<{L}} 0x{battery_alarm:04X}")
+            write(f, f"  {'BatterySafety':<{L}} 0x{battery_safety:04X}")
         else:
-            write(f, "读取失败（请检查串口、地址与接线）")
+            write(f, "  读取失败（请检查串口、地址与接线）")
 
         # ---------- 单体电压 0x0800-0x080F+ ----------
-        write(f, "\n[单体电压] 寄存器 0x0800-0x080F+")
-        vmax = modbus_read_regs(ser, 0x0800, 1)
-        vmin = modbus_read_regs(ser, 0x0801, 1)
-        if vmax and vmin:
-            write(f, f"Voltage Max       : {vmax[0]} mV")
-            write(f, f"Voltage Min       : {vmin[0]} mV")
-        for i in range(2, VOLT_COUNT):
-            v = modbus_read_regs(ser, 0x0800 + i, 1)
-            if v:
-                write(f, f"Voltage {i - 1:2d} (Cell {i - 1:02d}): {v[0]} mV")
+        write(f, "\n[单体电压]")
+        vregs = modbus_read_regs(ser, VOLT_START, VOLT_COUNT)
+        if vregs:
+            write(f, f"  最高  {vregs[0]:>5} mV    最低  {vregs[1]:>5} mV")
+            for i in range(2, VOLT_COUNT):
+                val = vregs[i]
+                cell = f"Cell {i - 1:02d}"
+                s = f"{val} mV" if val else "—"
+                write(f, f"  {cell}  {s:>10}")
+        else:
+            write(f, "  读取失败")
 
-        # ---------- 温度 0x0C00-0x0C03+，协议：Temp MAX/MIN/Temp1/Temp2... ----------
-        write(f, "\n[温度信息] 寄存器 0x0C00-0x0C03+ (℃=(值-2731)/10)")
-        for i in range(TEMP_COUNT):
-            t = modbus_read_regs(ser, TEMP_START + i, 1)
-            if t:
-                temp_c = (t[0] - 2731) / 10
-                label = ["Temp MAX", "Temp MIN", "Temp1", "Temp2"][i] if i < 4 else f"Temp{i}"
-                write(f, f"{label:12s} 0x{TEMP_START + i:04X}: {t[0]} (0x{t[0]:04X}) = {temp_c:.1f} ℃")
+        # ---------- 温度 0x0C00-0x0C03 ----------
+        write(f, "\n[温度]")
+        tregs = modbus_read_regs(ser, TEMP_START, TEMP_COUNT)
+        if tregs:
+            labels = ["MAX", "MIN", "Temp1", "Temp2"]
+            parts = [f"{labels[i]} {(tregs[i] - 2731) / 10:.1f} ℃" for i in range(TEMP_COUNT)]
+            write(f, "  " + "    ".join(parts))
+        else:
+            write(f, "  读取失败")
 
-        # ---------- AFE 0x1000, 0x1001, 0x1002 ----------
-        write(f, "\n[状态信息] AFE 寄存器 0x1000-0x1002")
+        # ---------- AFE 状态 ----------
+        write(f, "\n[状态]")
         afe_status = modbus_read_regs(ser, 0x1000, 1)
         afe_safety = modbus_read_regs(ser, 0x1001, 1)
         balance = modbus_read_regs(ser, 0x1002, 1)
-        if afe_status:
-            write(f, f"AFE Status 0x1000 : 0x{afe_status[0]:04X}")
-        if afe_safety:
-            write(f, f"AFE Safety 0x1001: 0x{afe_safety[0]:04X}")
-        if balance:
-            write(f, f"CELL BALAN 0x1002: 0x{balance[0]:04X}")
+        if afe_status is not None and afe_safety is not None and balance is not None:
+            write(f, f"  AFE 状态  0x{afe_status[0]:04X}    AFE 安全  0x{afe_safety[0]:04X}    均衡  0x{balance[0]:04X}")
+        else:
+            write(f, "  读取失败")
 
-        # ---------- 原始寄存器摘要（协议中所有可读地址）----------
-        write(f, "\n[原始寄存器摘要]")
+        # ---------- 原始寄存器（调试用）----------
+        write(f, "\n[原始寄存器]")
         for name, start, count in [
             ("0x0400 PACK", PACK_START, PACK_COUNT),
             ("0x0800 电压", VOLT_START, VOLT_COUNT),
