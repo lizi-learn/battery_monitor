@@ -107,8 +107,51 @@ def _fmt_bms_id_ascii(b):
     return "".join(c if 32 <= ord(c) < 127 else "" for c in b.decode("latin-1")).strip() or "—"
 
 
-def _fmt_hex_group(b):
-    return " ".join(f"{x:02X}" for x in b)
+def _decode_battery_status(v):
+    """BatteryStatus 位 → 中文"""
+    names = [
+        "容量自修正", "循环计数", "内阻更新", "电池放空", "电池充满", "休眠",
+        "AFE数据读取", "剩余时间", "OCV修正", "LED指示", "弱电开关", "保留",
+        "校准使能", "CC偏移", "通讯中", "程序激活",
+    ]
+    return _bits_to_names(v, names)
+
+
+def _decode_alarm_safety(v):
+    """BatteryAlarm / BatterySafety / AFE保护 位 → 中文"""
+    names = [
+        "单节欠压", "放电过流", "短路", "放电过温", "剩余容量保护", "放电低温",
+        "保留", "保留", "单节过压", "充电过流", "充电过温", "充电低温",
+        "保留", "保留", "保留", "告警",
+    ]
+    return _bits_to_names(v, names)
+
+
+def _decode_afe_status(v):
+    """AFE 状态位 → 中文"""
+    names = [
+        "充电MOS", "放电MOS", "预充", "中断", "电压中断", "温度中断", "电流中断",
+        "负载", "充电器", "放电中", "充电中", "通讯", "看门狗", "均衡开", "唤醒", "休眠",
+    ]
+    return _bits_to_names(v, names)
+
+
+def _decode_afe_safety(v):
+    """AFE 保护位 → 中文"""
+    names = [
+        "过压", "短路", "欠压", "充电过流", "放电过流1", "放电过流2",
+        "放电低温", "放电高温", "充电低温", "充电高温",
+    ]
+    return _bits_to_names(v, names[:10])
+
+
+def _bits_to_names(val, names):
+    """按位取 1 的名称列表，用空格拼成一句"""
+    out = []
+    for i, name in enumerate(names):
+        if i < 16 and (val >> i) & 1:
+            out.append(name)
+    return " ".join(out) if out else "无"
 
 
 def main():
@@ -124,14 +167,13 @@ def main():
     with open(OUT_FILE, "w", encoding="utf-8") as f:
         write(f, "===== BMS 全参数扫描结果（test_all.py 实际读取） =====\n")
 
-        # ---------- BMS ID（功能码 0x11）----------
-        write(f, "[BMS ID]")
+        # ---------- BMS ID -----------
+        write(f, "[设备]")
         bms_id = modbus_read_bms_id(ser)
         if bms_id:
-            write(f, f"  ASCII : {_fmt_bms_id_ascii(bms_id)}")
-            write(f, f"  HEX   : {_fmt_hex_group(bms_id)}")
+            write(f, f"  设备ID  {_fmt_bms_id_ascii(bms_id)}")
         else:
-            write(f, "  未读取到（部分设备不支持 0x11）")
+            write(f, "  设备ID  未读取到")
 
         # ---------- PACK 信息 0x0400-0x0415 ----------
         write(f, "\n[PACK 信息]")
@@ -166,9 +208,9 @@ def main():
             write(f, f"  {'充满所需时间':<{L}} {_fmt_time(t_full):>6}")
             write(f, f"  {'SOC':<{L}} {soc:>6} %")
             write(f, f"  {'SOH':<{L}} {soh:>6} %")
-            write(f, f"  {'BatteryStatus':<{L}} 0x{battery_status:04X}")
-            write(f, f"  {'BatteryAlarm':<{L}} 0x{battery_alarm:04X}")
-            write(f, f"  {'BatterySafety':<{L}} 0x{battery_safety:04X}")
+            write(f, f"  {'电池状态':<{L}} {_decode_battery_status(battery_status)}")
+            write(f, f"  {'告警':<{L}} {_decode_alarm_safety(battery_alarm)}")
+            write(f, f"  {'保护':<{L}} {_decode_alarm_safety(battery_safety)}")
         else:
             write(f, "  读取失败（请检查串口、地址与接线）")
 
@@ -195,29 +237,17 @@ def main():
         else:
             write(f, "  读取失败")
 
-        # ---------- AFE 状态 ----------
+        # ---------- 状态（人可读）----------
         write(f, "\n[状态]")
         afe_status = modbus_read_regs(ser, 0x1000, 1)
         afe_safety = modbus_read_regs(ser, 0x1001, 1)
         balance = modbus_read_regs(ser, 0x1002, 1)
         if afe_status is not None and afe_safety is not None and balance is not None:
-            write(f, f"  AFE 状态  0x{afe_status[0]:04X}    AFE 安全  0x{afe_safety[0]:04X}    均衡  0x{balance[0]:04X}")
+            write(f, f"  运行   {_decode_afe_status(afe_status[0])}")
+            write(f, f"  保护   {_decode_afe_safety(afe_safety[0])}")
+            write(f, f"  均衡   {'均衡中' if balance[0] else '未均衡'}")
         else:
             write(f, "  读取失败")
-
-        # ---------- 原始寄存器（调试用）----------
-        write(f, "\n[原始寄存器]")
-        for name, start, count in [
-            ("0x0400 PACK", PACK_START, PACK_COUNT),
-            ("0x0800 电压", VOLT_START, VOLT_COUNT),
-            ("0x0C00 温度", TEMP_START, TEMP_COUNT),
-            ("0x1000 AFE", AFE_START, AFE_COUNT),
-        ]:
-            r = modbus_read_regs(ser, start, count)
-            if r:
-                write(f, f"  {name}: " + " ".join(f"{x:04X}" for x in r))
-            else:
-                write(f, f"  {name}: 读取失败")
 
         write(f, "\n===== 扫描结束 =====")
 
