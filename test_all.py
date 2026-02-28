@@ -2,13 +2,29 @@
 # -*- coding: utf-8 -*-
 """
 通过串口 Modbus 读取 BMS 全部可读参数（协议功能码 03 + 0x11 BMS ID），结果写入 test_all.txt
-依赖: pip install pyserial
+支持持续监测模式：电池温度 + 电脑温度（CPU、NVMe），合并输出。
+依赖: pip install pyserial；监测电脑温度需系统有 sensors（lm-sensors）
 """
 
+import sys
 import serial
 import struct
 import time
 from pathlib import Path
+
+try:
+    from test_system_temp import (
+        get_cpu_temp,
+        get_nvme_temp,
+        log_msg,
+        CPU_WARN,
+        NVME_WARN,
+        INTERVAL as TEMP_INTERVAL,
+    )
+except ImportError:
+    get_cpu_temp = get_nvme_temp = log_msg = None
+    CPU_WARN = NVME_WARN = 85
+    TEMP_INTERVAL = 2
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PORT = "/dev/ttyCH341USB1"
@@ -101,6 +117,14 @@ def write(f, text: str = ""):
 
 def _fmt_time(v):
     return "N/A" if v == 65535 else f"{v} min"
+
+
+def read_bms_temps_c(ser):
+    """读取 BMS 温度寄存器，返回 [MAX, MIN, Temp1, Temp2] 单位 ℃，失败返回 None"""
+    r = modbus_read_regs(ser, TEMP_START, TEMP_COUNT)
+    if not r:
+        return None
+    return [(v - 2731) / 10 for v in r]
 
 
 def _fmt_bms_id_ascii(b):
@@ -255,5 +279,67 @@ def main():
     print(f"结果已写入: {OUT_FILE}")
 
 
+def run_monitor():
+    """持续监测：电池温度 + 电脑温度，合并输出；超阈值写日志告警。"""
+    print("持续监测温度（电池 + CPU + NVMe），按 Ctrl+C 退出\n")
+    try:
+        ser = serial.Serial(
+            port=PORT,
+            baudrate=BAUDRATE,
+            bytesize=8,
+            parity="N",
+            stopbits=1,
+            timeout=TIMEOUT,
+        )
+    except Exception as e:
+        print(f"串口打开失败: {e}，仅显示电脑温度")
+        ser = None
+    if log_msg:
+        log_msg("BMS+系统温度监测已启动")
+
+    try:
+        while True:
+            parts = []
+            # 电池温度
+            if ser is not None:
+                bms = read_bms_temps_c(ser)
+                if bms is not None:
+                    parts.append(f"电池 MAX {bms[0]:.1f} MIN {bms[1]:.1f} T1 {bms[2]:.1f} T2 {bms[3]:.1f} ℃")
+                else:
+                    parts.append("电池 —")
+            else:
+                parts.append("电池 —")
+            # 电脑温度
+            if get_cpu_temp is not None and get_nvme_temp is not None:
+                cpu = get_cpu_temp()
+                nvme = get_nvme_temp()
+                cpu_s = f"{cpu:.1f}" if cpu is not None else "—"
+                nvme_s = f"{nvme:.1f}" if nvme is not None else "—"
+                parts.append(f"CPU {cpu_s} ℃")
+                parts.append(f"NVMe {nvme_s} ℃")
+                if log_msg:
+                    if cpu is not None and cpu > CPU_WARN:
+                        log_msg(f"WARNING: CPU 过热 {cpu:.1f}°C")
+                        print("  ⚠ CPU 过热!")
+                    if nvme is not None and nvme > NVME_WARN:
+                        log_msg(f"WARNING: NVMe 过热 {nvme:.1f}°C")
+                        print("  ⚠ NVMe 过热!")
+            else:
+                parts.append("CPU/NVMe(未安装 test_system_temp 或 sensors)")
+
+            line = " | ".join(parts)
+            ts = time.strftime("%H:%M:%S", time.localtime())
+            print(f"[{ts}] {line}")
+            time.sleep(TEMP_INTERVAL)
+    except KeyboardInterrupt:
+        print("\n监测已停止")
+    finally:
+        if ser is not None:
+            ser.close()
+
+
 if __name__ == "__main__":
-    main()
+    if "--monitor" in sys.argv or "monitor" in sys.argv:
+        run_monitor()
+    else:
+        main()
