@@ -1,0 +1,341 @@
+===== BMS MODBUS 协议（从 PDF 完整提取） =====
+
+========== 第 1 页 / 共 7 页 ==========
+
+ModBus 通讯协议
+
+Rev.1.0 202202
+
+1.0 接⼝说明和串⼝默认配置信息
+
+串口波特率：9600    校验位：NONE    数据位：8bit    停止位：1bit
+
+1.1 格式
+
+RTU  地址码   功能码  数据起始地址 数据⻓度     CRC16 校验  RTU
+
+2.2 说明(默认地址：0B)
+
+2.2.1 寄存器地址使⽤16 进制格式，基地址偏移量为0x00。
+ 2.2.2 所有32 位⻓度的数据使⽤2 个16 位⻓度的寄存器来表示，以L 寄存器和H 寄存器分别表示，例如：
+   充电输⼊电流的实际值是100A，即100000mA，该变量L 寄存器（地址0x0）的值是0x86a0 和H 寄
+   存器（地址0x1）的值是0x1。
+
+2.3 实例
+
+1) 读寄存器
+
+请求：
+
+描述   字节数 命令
+
+设备地址      BYTE   01H～7FH
+
+功 能 码      BYTE    03H
+
+起始地址      WORD    0000H～FFFFH
+
+读的字数      WORD    0001H～007DH
+
+校 验 码      WORD  以上所有字节的CRC16
+
+正常应答：
+
+描述   字节数        命令
+
+设备地址      BYTE   01H～F7H
+
+功 能 码      BYTE    03H
+
+读的字数      BYTE    0001H～007DH
+
+数据内容      WORD  读出的数据 (先发高位，再发低位)
+
+校 验 码      WORD  以上所有字节的CRC16
+
+3.电池PACK 信息地址表：
+
+序号  功能码  数据地址      名称     单位  变量类型     备注
+
+网   址:www.li-bms.com 邮  箱:salse@li-bms.com “德诚四方”专有信息。禁止未经授权的复印和复制
+
+公司地址:广东省深圳市宝安区沙井街道办宝安大道8206 号301 室
+                                                                                                     1 / 7
+
+========== 第 2 页 / 共 7 页 ==========
+
+ModBus 通讯协议
+
+Rev.1.0 202202
+
+1       3       0x0400     Current_L         mA    long
+   2       3       0x0401     Current_H
+   3       3       0x0402     RemainingCapacity_L   mAh  unsigned long
+   4       3       0x0403     RemainingCapacity_H
+   5       3       0x0404     FullChargeCapacity_L   mAh  unsigned long
+   6       3       0x0405     FullChargeCapacity_H
+   7       3       0x0406     Charge Current_L     mA
+   8       3       0x0407     Charge Current_H
+   9       3       0x0408     ChargingVoltage_L    mV
+   10      3       0x0409     ChargingVoltage_H
+   11      3       0x040A    PACK Voltage_L      mV
+   12      3       0x040B    PACK Voltage_H
+   13      3       0x040C     BatteryVoltage_L     mV    unsigned short
+   14      3       0x040D     BatteryVoltage_H              unsigned short
+   15      3       0x040E     Cycle_Count           %      unsigned short
+   16      3       0x040F     AverageTimeToEmpty   min   unsigned short
+   17      3       0x0410     AverageTimeToFull     min   unsigned short
+   18      3       0x0411    SOC                  %      unsigned short
+   19      3       0x0412    SOH                  %
+   20      3       0x0413      BatteryStatus          Hex         ⻅附录
+   21      3       0x0414     BatteryAlarm          Hex         ⻅附录
+   22      3       0x0415      BatterySafety          Hex         ⻅附录
+
+23      3       0x0800     Voltage Max        mV    unsigned short
+   24      3       0x0801     Voltage Min        mV    unsigned short
+   25      3       0x0802     Voltage 1         mV    unsigned short
+   26      3       0x0803     Voltage 2         mV    unsigned short
+   27      3       0x0804     Voltage 3         mV    unsigned short
+   28      3       0x0805     Voltage 4         mV    unsigned short
+   29      3       0x0806     Voltage 5         mV    unsigned short
+   30      3       0x0807     Voltage 6         mV    unsigned short
+   31      3       0x0808     Voltage 7         mV    unsigned short
+   32      3       0x0809     Voltage 8         mV    unsigned short
+   33      3       0x080A     Voltage 9         mV    unsigned short
+   34      3       0x080B     Voltage 10         mV    unsigned short
+                    以此类推
+   35      3       0x0C00    Temp MAX           K     unsigned short
+   36      3       0x0C01    Temp MIN            K     unsigned short
+   37      3       0x0C02    Temp1              K     unsigned short
+   38      3       0x0C03    Temp2              K     unsigned short
+   39      3       0x0C03    Temp3              K     unsigned short
+                    以此类推
+   40      3       0x1000     AFE Status           HEX   2Byte HEX
+
+网   址:www.li-bms.com 邮  箱:salse@li-bms.com “德诚四方”专有信息。禁止未经授权的复印和复制
+
+公司地址:广东省深圳市宝安区沙井街道办宝安大道8206 号301 室
+                                                                                                     2 / 7
+
+========== 第 3 页 / 共 7 页 ==========
+
+ModBus 通讯协议
+
+Rev.1.0 202202
+
+41      3       0x1001     AFE Safety           HEX   2Byte HEX
+   42      3       0x1002     CELL BALAN         HEX   2Byte HEX
+                    以此类推
+   43     0x10      0xFC00   充电mos 开关-0x0020  Hex   unsigned short 扩展功能
+   44     0x10      0xFC00   放电mos 开关-0x0021  Hex   unsigned short 扩展功能
+   45     0x10      0xFC00    BMS 重启-0x0041      Hex   unsigned short 扩展功能
+   46     0x10      0xFC00   充电mos 关-0x0030    Hex   unsigned short 扩展功能
+   47     0x10      0xFC00   充电mos 开-0x0031    Hex   unsigned short 扩展功能
+   48     0x10      0xFC00   放电mos 关-0x0032    Hex   unsigned short 扩展功能
+   49     0x10      0xFC00   放电mos 开-0x0033    Hex   unsigned short 扩展功能
+   46     0x11      0x0000    BMS ID             HEX                 12 个字节 12
+                                                                                 Byte
+
+****注意CRC 采用的是CRC-16/MODBUS x16+x15+x2+1；温度转换℃=(值-2731)/10 单位0.1℃
+                                       ****
+
+4.举例说明
+
+读取13 个数据
+发送指令： 0B 03 04 00 00 0D 85 95
+
+解析： 0B         设备 地址
+
+03         功能码
+
+04 00        要读取地址起始位
+
+00 0D          要读取地址个数（16bit 长度）
+
+85 95                CRC16 校验
+
+接收指令 :0B 03 1A 00 00 00 00 2A F8 00 00 86 A0 00 01 06 05 00 00 A3 37 00 00 FF FF FF FF 00 0B
+
+89 19
+
+解析： 0B          设备 地址
+
+03         功能码
+
+1A                   26 个字节
+
+0000 0000 2AF8 0000 86A0 0001 0605 0000 A337 0000 FFFF FFFF 000B 读取到地址的数据
+
+89 19                CRC 校验
+
+读取单个数据  电压(Voltage Max)
+发送指令：   0B 03 08 00 00 01 86 C0
+
+解析： 0B         设备 地址
+
+03         功能码
+
+04 00        要读取地址起始位
+
+00 01          要读取地址个数（16bit 长度）
+
+86 C0                CRC16 校验
+
+接收指令 ： 0B 03 02 0C 9D E4 EC
+
+网   址:www.li-bms.com 邮  箱:salse@li-bms.com “德诚四方”专有信息。禁止未经授权的复印和复制
+
+公司地址:广东省深圳市宝安区沙井街道办宝安大道8206 号301 室
+                                                                                                     3 / 7
+
+========== 第 4 页 / 共 7 页 ==========
+
+ModBus 通讯协议
+
+Rev.1.0 202202
+
+解析： 0B          设备 地址
+
+03         功能码
+
+02                   2 个字节
+
+0C 9D         读取到地址的数据（0x0C9D (十六进制) = 3229 (十进制)mV）
+
+E4 EC                CRC 校验
+
+网   址:www.li-bms.com 邮  箱:salse@li-bms.com “德诚四方”专有信息。禁止未经授权的复印和复制
+
+公司地址:广东省深圳市宝安区沙井街道办宝安大道8206 号301 室
+                                                                                                     4 / 7
+
+========== 第 5 页 / 共 7 页 ==========
+
+ModBus 通讯协议
+
+Rev.1.0 202202
+
+5.附录：
+
+BatteryStatus 状态位
+   ACT     HEAT     CC_Offset   CAL_EN  PACK_CHG  WCS_KEY    LED     COCV
+   RTA        INIT      SLEEP      FC       FD          IR       CC       CF
+
+Bit0  CF : 1; //容量自修正学习
+     Bit1  CC:1;//循环计数
+     Bit2  IR:1;//内阻更新
+     Bit3  FD : 1; // 电池放空
+     Bit4  FC : 1; // 电池充满
+     Bit5  Sleep : 1; // IR= 1 内阻计算成功 0
+     Bit6  INIT:1; //AFE 数据读取
+     Bit7  RTA:1; //剩余时间
+     Bit8  COCV:1; //OCV 容量修正
+     Bit9  LED: LED 容量打开指示
+     Bit10  WCS_KEY:1; 弱电开关 1:ON 0:OFF
+     Bit11  PACK_CHG:1; 保留
+     Bit12  CAL_EN:1; //校准使能
+     Bit13  CC_Offset:1;//校准CC 偏移量
+     Bit14 HEAT:1;//通讯数据读取中
+     Bit15  ACT:1;//程序激活
+BatteryAlarm 状态位
+  ALERT    P_DSG    REVC     REVC    CHG_UT   CHG_OT    OCC     COV
+   REVC     REVC    DSG_UT    RCA    DSG_OT     SCD     OCD     CUV
+     Bit0 CUV : 1; // 单节电池欠压
+     Bit1 OCD : 1; // 放电过流
+     Bit2  SCD : 1; // 电池短路
+     Bit3  DSG_OT : 1; // 放电过温保护
+     Bit4 RCA : 1; // 剩余容量保护
+     Bit5  DSG_UT : 1; //放电低温保护
+     Bit6  REVC:2;保留
+     Bit8 COV : 1; // 单节电池过压
+     Bit9 OCC : 1; // 充电过流
+     Bit10  CHG_OT : 1; //充电过温保护
+     Bit11  CHG_UT : 1; // 充电低温保护
+     Bit12  REVC:1;保留
+     Bit13  REVC:1; 保留
+     Bit14  P_DSG:1; 保留
+     Bit15  ALERT :1; 保留
+附录2：
+ BatterySafety 状态位
+  ALERT    P_DSG    REVC     REVC    CHG_UT   CHG_OT    OCC     COV
+
+网   址:www.li-bms.com 邮  箱:salse@li-bms.com “德诚四方”专有信息。禁止未经授权的复印和复制
+
+公司地址:广东省深圳市宝安区沙井街道办宝安大道8206 号301 室
+                                                                                                     5 / 7
+
+========== 第 6 页 / 共 7 页 ==========
+
+ModBus 通讯协议
+
+Rev.1.0 202202
+
+REVC     REVC    DSG_UT    RCA    DSG_OT     SCD     OCD     CUV
+
+Bit0 CUV : 1; // 单节电池欠压
+     Bit1 OCD : 1; // 放电过流
+     Bit2  SCD : 1; // 电池短路
+     Bit3  DSG_OT : 1; // 放电过温保护
+     Bit4 RCA : 1; // 剩余容量保护
+     Bit5  DSG_UT : 1; //放电低温保护
+     Bit6  REVC:2;保留
+     Bit8 COV : 1; // 单节电池过压
+     Bit9 OCC : 1; // 充电过流
+     Bit10  CHG_OT : 1; //充电过温保护
+     Bit11  CHG_UT : 1; // 充电低温保护
+     Bit12  REVC:1;保留
+     Bit13  REVC1:1; 保留
+     Bit14  P_DSG:1; 保留
+     Bit15  ALERT :1; 保留
+AFE 状态
+   SLEEP   WAKE_FLG   CBEN   AFE_WDT    TWI     CHGING   DSGING    CHGR
+  LOAD     CFLG     TFLG     VFLG    ALARM  PCHG_FET  DSG_FET  CHG_FET
+
+Bit0  CHG_FET: 1; //充电MOS
+     Bit1   DSG_FET: 1; //放电MOS
+     Bit2   PCHG_FET: 1; //预充
+     Bit3  ALARM: 1; //中断
+     Bit4   VFLG: 1; //电压中断
+     Bit5   TFLG: 1; //温度中断
+     Bit6   CFLG: 1; //电流中断
+     Bit7  LOAD: 1; //负载检测
+     Bit8  CHGR: 1; //充电器检测
+     Bit9   DSGING: 1; //放电状态
+     Bit10  CHGING: 1; //充电状态
+     Bit11   TWI: 1; //通讯
+     Bit12  AFE_WDT: 1; //看门狗
+     Bit13   CBEN: 1; //均衡开启
+     Bit14   WAKE_FLG:1;
+     Bit15   SLEEP: 1; //休眠模式
+AFE 保护
+
+REVC     REVC     REVC     REVC     REVC     REVC     REVC     OTC
+   UTC      OTD     UTD     ODC1     OCC      UV      SCD     COV
+
+Bit0   COV: 1; //过压
+     Bit1   SCD: 1; //短路
+
+网   址:www.li-bms.com 邮  箱:salse@li-bms.com “德诚四方”专有信息。禁止未经授权的复印和复制
+
+公司地址:广东省深圳市宝安区沙井街道办宝安大道8206 号301 室
+                                                                                                     6 / 7
+
+========== 第 7 页 / 共 7 页 ==========
+
+ModBus 通讯协议
+
+Rev.1.0 202202
+
+Bit2   UV: 1; //欠压
+     Bit3   OCC: 1; //充电过流
+     Bit4   ODC1: 1; //放电过流
+     Bit5   ODC2: 1; //放电过流
+     Bit6   UTD: 1; //放电低温
+     Bit7   OTD: 1; //放电高温
+     Bit8   UTC: 1; //充电低温
+     Bit9   OTC: 1; //充电高温
+
+网   址:www.li-bms.com 邮  箱:salse@li-bms.com “德诚四方”专有信息。禁止未经授权的复印和复制
+
+公司地址:广东省深圳市宝安区沙井街道办宝安大道8206 号301 室
+                                                                                                     7 / 7
